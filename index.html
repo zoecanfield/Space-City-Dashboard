@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space City Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0b3d91; /* NASA Blue */
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Twinkling Space Background Effects */
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        
+        .stars, .stars2 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Tiny foreground stars */
+        .stars {
+            background-image: 
+                radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 40px 70px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 50px 160px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 80px 120px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 110px 40px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 150px 90px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 190px 150px, #fff, rgba(0,0,0,0));
+            background-size: 200px 200px;
+            animation: twinkle 4s infinite ease-in-out;
+        }
+
+        /* Medium background stars */
+        .stars2 {
+            background-image: 
+                radial-gradient(1.5px 1.5px at 30px 100px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 70px 20px, #fff, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 120px 140px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 160px 60px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 180px 110px, #fff, rgba(0,0,0,0));
+            background-size: 250px 250px;
+            animation: twinkle 6s infinite ease-in-out;
+            opacity: 0.6;
+        }
+
+        /* Houston Astros Orange neon glow */
+        .glow-text {
+            text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #F4911E, 0 0 30px #F4911E;
+            color: #ffffff;
+        }
+        /* Main panel container with matching orange border */
+        .container {
+            background-color: #111111;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #F4911E; /* Astros Orange Border */
+            box-shadow: 0px 4px 20px rgba(244, 145, 30, 0.4); /* Matching orange shadow glow */
+            position: relative;
+            z-index: 10;
+        }
+        /* Astros Orange glow shadow around the loaded image */
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-top: 15px;
+            box-shadow: 0 0 15px rgba(244, 145, 30, 0.6); 
+            border: 1px solid rgba(244, 145, 30, 0.3);
+        }
+        p {
+            text-align: left;
+            line-height: 1.6;
+        }
+        /* Pulse effect for the loading message */
+        @keyframes pulse {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        /* Sleek white pulsing text during fetch */
+        .animated-pulse {
+            text-align: center; 
+            font-style: italic;
+            animation: pulse 2s infinite ease-in-out;
+            color: #ffffff; 
+        }
+        /* Custom status text using professional soft off-white */
+        .loaded-status {
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: #E0E0E0; 
+        }
+        /* High-tech date picker wrapper and input elements */
+        .control-group {
+            margin: 15px auto;
+            text-align: center;
+        }
+        .control-group label {
+            font-size: 0.9rem;
+            color: #ffb05c;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        .control-group input[type="date"] {
+            background: #222222;
+            border: 1px solid #F4911E;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            outline: none;
+            cursor: pointer;
+        }
+        /* Style for your professional signature footer */
+        .footer {
+            text-align: center;
+            font-size: 0.9rem;
+            margin-top: 25px;
+            opacity: 0.7;
+            border-top: 1px solid #333;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Invisible background star elements -->
+    <div class="stars"></div>
+    <div class="stars2"></div>
+
+    <div class="container">
+        <h1 class="glow-text">Space City Dashboard</h1>
+        <p id="loading-status" class="animated-pulse">Fetching live data from NASA...</p>
+        
+        <!-- Interactive Date Picker Controls -->
+        <div class="control-group">
+            <label for="space-date">MISSION DATE:</label>
+            <input type="date" id="space-date" min="1995-06-16">
+        </div>
+        
+        <h2 id="title">Image Title Loading...</h2>
+        <div id="media-container"></div>
+        <p id="explanation">Loading explanation...</p>
+        
+        <!-- Change [Your Name] to your real name below -->
+        <div class="footer">Created by [Zoe Canfield] | Space City Dashboard</div>
+    </div>
+
+    <script>
+        // PASTE YOUR ACTUAL KEY DIRECTLY BETWEEN THE QUOTES BELOW
+        const myApiKey = "8kblA5e5ExqfpzMwOInfqWVAuqayQzPoZEhl9Co8";
+
+        // Prevent users from picking future dates by locking it to today's date
+        const datePicker = document.getElementById("space-date");
+        const todayStr = new Date().toISOString().split("T")[0];
+        datePicker.max = todayStr;
+
+        async function fetchNasaData(selectedDate = "") {
+            const statusText = document.getElementById("loading-status");
+            statusText.innerText = "Fetching live data from NASA...";
+            statusText.className = "animated-pulse";
+            statusText.style.color = "#ffffff";
+
+            // Clean, explicit string format assembly
+            let finalUrl = "https://api.nasa.gov/planetary/apod?api_key=" + String(myApiKey);
+            if (selectedDate) {
+                finalUrl = finalUrl + "&date=" + String(selectedDate);
+            }
+
+            try {
+                const response = await fetch(finalUrl);
+                const data = await response.json();
+                
+                document.getElementById("title").innerText = data.title;
+                document.getElementById("explanation").innerText = data.explanation;
+                
+                const mediaContainer = document.getElementById("media-container");
+                mediaContainer.innerHTML = `<img src="${data.url}" alt="NASA APOD">`;
+                
+                statusText.innerText = "System Online";
+                statusText.className = "loaded-status";
+                
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                document.getElementById("title").innerText = "Failed to load NASA data.";
+                
+                statusText.innerText = "System Offline";
+                statusText.style.color = "#e74c3c";
+                statusText.style.animation = "none";
+            }
+        }
+
+        // Run automatically when the webpage fires up
+        fetchNasaData();
+
+        // Listen for user calendar updates and cleanly format the chosen value
+        datePicker.addEventListener("change", function(event) {
+            var plainTextDate = String(event.target.value);
+            fetchNasaData(plainTextDate);
+        });
+    </script>
+</body>
+</html>
