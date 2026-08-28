@@ -65,18 +65,21 @@
             text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #F4911E, 0 0 30px #F4911E;
             color: #ffffff;
         }
-        /* Main panel container with matching orange border */
+               /* Main panel container with matching orange border */
         .container {
             background-color: #111111;
-            max-width: 600px;
+            width: 90%; /* Allows it to be responsive on smaller screens */
+            max-width: 1000px; /* Expands the dashboard to a wider landscape view */
             margin: 40px auto;
-            padding: 20px;
+            padding: 30px; /* Slightly increased padding for better spacing */
             border-radius: 10px;
             border: 2px solid #F4911E; /* Astros Orange Border */
             box-shadow: 0px 4px 20px rgba(244, 145, 30, 0.4); /* Matching orange shadow glow */
             position: relative;
             z-index: 10;
+            box-sizing: border-box; /* Ensures padding doesn't break the width */
         }
+
         /* Astros Orange glow shadow around the loaded image */
         img {
             max-width: 100%;
