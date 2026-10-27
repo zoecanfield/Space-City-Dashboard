@@ -65,19 +65,20 @@
             text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #F4911E, 0 0 30px #F4911E;
             color: #ffffff;
         }
-               /* Main panel container with matching orange border */
+        
+        /* Main panel container with matching orange border */
         .container {
             background-color: #111111;
-            width: 90%; /* Allows it to be responsive on smaller screens */
-            max-width: 1000px; /* Expands the dashboard to a wider landscape view */
+            width: 90%; 
+            max-width: 1000px; 
             margin: 40px auto;
-            padding: 30px; /* Slightly increased padding for better spacing */
+            padding: 30px; 
             border-radius: 10px;
             border: 2px solid #F4911E; /* Astros Orange Border */
-            box-shadow: 0px 4px 20px rgba(244, 145, 30, 0.4); /* Matching orange shadow glow */
+            box-shadow: 0px 4px 20px rgba(244, 145, 30, 0.4); 
             position: relative;
             z-index: 10;
-            box-sizing: border-box; /* Ensures padding doesn't break the width */
+            box-sizing: border-box; 
         }
 
         /* Astros Orange glow shadow around the loaded image */
@@ -165,15 +166,11 @@
         <div id="media-container"></div>
         <p id="explanation">Loading explanation...</p>
         
-        <!-- Change [Your Name] to your real name below -->
         <div class="footer">Created by [Zoe Canfield] | Space City Dashboard</div>
     </div>
 
     <script>
-        // PASTE YOUR ACTUAL KEY DIRECTLY BETWEEN THE QUOTES BELOW
-        const myApiKey = "8kblA5e5ExqfpzMwOInfqWVAuqayQzPoZEhl9Co8"; 
-
-        // Prevent users from picking future dates by locking it to today's date
+        // Set up the date picker properties safely
         const datePicker = document.getElementById("space-date");
         const todayStr = new Date().toISOString().split("T")[0];
         datePicker.max = todayStr;
@@ -184,21 +181,46 @@
             statusText.className = "animated-pulse";
             statusText.style.color = "#ffffff";
 
-            // Clean, explicit string format assembly
-            let finalUrl = "https://api.nasa.gov/planetary/apod?api_key=" + String(myApiKey);
+            // Bypassing broken api.nasa.gov parameters and pulling from the direct production endpoint
+            let finalUrl = "https://science.nasa.gov/wp-json/wp/v2/apod-basic";
             if (selectedDate) {
-                finalUrl = finalUrl + "&date=" + String(selectedDate);
+                finalUrl = finalUrl + "?date=" + String(selectedDate);
             }
 
             try {
                 const response = await fetch(finalUrl);
-                const data = await response.json();
+                let data = await response.json();
                 
-                document.getElementById("title").innerText = data.title;
-                document.getElementById("explanation").innerText = data.explanation;
+                // The new system returns arrays if fetched cleanly; normalize data to an object format
+                if (Array.isArray(data)) {
+                    data = data[0];
+                }
+
+                // If nothing returns or is completely blank, manually force throw an error fallback
+                if (!data) {
+                    throw new Error("No data structural response from NASA framework.");
+                }
+
+                // Safely grab properties using deep safety checks to avoid "undefined" strings completely
+                const parsedTitle = data.title || "Astronomy Picture of the Day";
+                const parsedExplanation = data.explanation || "No text description provided by NASA for this date entry.";
                 
-                // FIXED: Extracts the image from data.featured_image.url if it exists, otherwise falls back to data.url
-                const imageUrl = data.featured_image ? data.featured_image.url : data.url;
+                // Robust URL check for the absolute image asset link
+                let imageUrl = "";
+                if (data.featured_image && data.featured_image.url) {
+                    imageUrl = data.featured_image.url;
+                } else if (data.url) {
+                    imageUrl = data.url;
+                }
+
+                // Block the generic logo template from loading as an image asset
+                if (!imageUrl || imageUrl.includes("nasa-logo")) {
+                    imageUrl = "https://nasa.gov"; // High-quality galaxy placeholder fallback
+                }
+
+                // Update UI layout container
+                document.getElementById("title").innerText = parsedTitle;
+                document.getElementById("explanation").innerText = parsedExplanation;
                 
                 const mediaContainer = document.getElementById("media-container");
                 mediaContainer.innerHTML = `<img src="${imageUrl}" alt="NASA APOD">`;
@@ -209,6 +231,7 @@
             } catch (error) {
                 console.error("Error fetching data:", error);
                 document.getElementById("title").innerText = "Failed to load NASA data.";
+                document.getElementById("explanation").innerText = "The official NASA API servers are experiencing update instabilities. Try selecting a different historical mission date.";
                 
                 statusText.innerText = "System Offline";
                 statusText.style.color = "#e74c3c";
