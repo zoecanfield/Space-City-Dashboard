@@ -171,7 +171,7 @@
 
     <script>
         // PASTE YOUR ACTUAL KEY DIRECTLY BETWEEN THE QUOTES BELOW
-        const myApiKey = "8kblA5e5ExqfpzMwOInfqWVAuqayQzPoZEhl9Co8";
+        const myApiKey = "8kblA5e5ExqfpzMwOInfqWVAuqayQzPoZEhl9Co8"; 
 
         // Prevent users from picking future dates by locking it to today's date
         const datePicker = document.getElementById("space-date");
@@ -197,8 +197,11 @@
                 document.getElementById("title").innerText = data.title;
                 document.getElementById("explanation").innerText = data.explanation;
                 
+                // FIXED: Extracts the image from data.featured_image.url if it exists, otherwise falls back to data.url
+                const imageUrl = data.featured_image ? data.featured_image.url : data.url;
+                
                 const mediaContainer = document.getElementById("media-container");
-                mediaContainer.innerHTML = `<img src="${data.url}" alt="NASA APOD">`;
+                mediaContainer.innerHTML = `<img src="${imageUrl}" alt="NASA APOD">`;
                 
                 statusText.innerText = "System Online";
                 statusText.className = "loaded-status";
@@ -216,10 +219,9 @@
         // Run automatically when the webpage fires up
         fetchNasaData();
 
-        // Listen for user calendar updates and cleanly format the chosen value
-        datePicker.addEventListener("change", function(event) {
-            var plainTextDate = String(event.target.value);
-            fetchNasaData(plainTextDate);
+        // Listen for user calendar updates and cleanly format the date changes
+        datePicker.addEventListener("change", (e) => {
+            fetchNasaData(e.target.value);
         });
     </script>
 </body>
