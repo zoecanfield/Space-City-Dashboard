@@ -172,11 +172,33 @@
         
         <div class="footer">Created by Zoe Canfield | Space City Dashboard</div>
     </div>
-
-    <script>
+     <script>
         const datePicker = document.getElementById("space-date");
         const todayStr = new Date().toISOString().split("T").at(0);
         datePicker.max = todayStr;
+
+        async function fetchWithFallbacks(nasaEndpoint) {
+            // Try direct connection to NASA first, then two reliable CORS proxies if blocked
+            const candidates = [
+                nasaEndpoint,
+                `https://corsproxy.io{encodeURIComponent(nasaEndpoint)}`,
+                `https://codetabs.com{encodeURIComponent(nasaEndpoint)}`
+            ];
+
+            let lastError = null;
+            for (const url of candidates) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (err) {
+                    lastError = err;
+                }
+            }
+            throw lastError || new Error("All NASA connection routes failed.");
+        }
 
         async function fetchNasaData(selectedDate = "") {
             const statusText = document.getElementById("loading-status");
@@ -194,16 +216,8 @@
                 nasaEndpoint = `${nasaEndpoint}/${yymmdd}`;
             }
 
-            // Use AllOrigins CORS proxy so GitHub Pages can read NASA's WordPress API cleanly
-            const proxyUrl = `https://allorigins.win{encodeURIComponent(nasaEndpoint)}`;
-
             try {
-                const response = await fetch(proxyUrl);
-                if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status}`);
-                }
-
-                let data = await response.json();
+                let data = await fetchWithFallbacks(nasaEndpoint);
                 
                 if (Array.isArray(data)) {
                     data = data.at(0);
@@ -256,5 +270,3 @@
             fetchNasaData(event.target.value);
         });
     </script>
-</body>
-</html>
