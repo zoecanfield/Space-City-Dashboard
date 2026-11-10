@@ -172,13 +172,12 @@
         
         <div class="footer">Created by Zoe Canfield | Space City Dashboard</div>
     </div>
-     <script>
+      <script>
         const datePicker = document.getElementById("space-date");
         const todayStr = new Date().toISOString().split("T").at(0);
         datePicker.max = todayStr;
 
         async function fetchWithFallbacks(nasaEndpoint) {
-            // Try direct connection to NASA first, then two reliable CORS proxies if blocked
             const candidates = [
                 nasaEndpoint,
                 `https://corsproxy.io{encodeURIComponent(nasaEndpoint)}`,
@@ -197,7 +196,7 @@
                     lastError = err;
                 }
             }
-            throw lastError || new Error("All NASA connection routes failed.");
+            throw lastError || new Error("Primary APOD feed blocked.");
         }
 
         async function fetchNasaData(selectedDate = "") {
@@ -252,15 +251,33 @@
                 statusText.className = "loaded-status";
                 statusText.style.color = "#2ecc71";
 
-            } catch (error) {
-                console.error("Error fetching data:", error);
-                document.getElementById("title").innerText = "Failed to load NASA data.";
-                document.getElementById("explanation").innerText = "Error details: " + error.message;
-                mediaContainer.innerHTML = "";
+            } catch (primaryError) {
+                // Backup: Pull directly from NASA's CORS-enabled Image Library API if APOD is blocked
+                try {
+                    const backupRes = await fetch("https://nasa.gov");
+                    const backupJson = await backupRes.json();
+                    const items = backupJson.collection.items;
+                    const randomItem = items.at(Math.floor(Math.random() * 10));
+                    const itemData = randomItem.data.at(0);
+                    const itemImg = randomItem.links.at(0).href;
 
-                statusText.innerText = "SYSTEM OFFLINE";
-                statusText.className = "loaded-status";
-                statusText.style.color = "#e74c3c";
+                    document.getElementById("title").innerText = itemData.title || "NASA Space Archive";
+                    document.getElementById("explanation").innerText = itemData.description || "Loaded via NASA Image Library backup feed.";
+                    mediaContainer.innerHTML = `<img src="${itemImg}" alt="${itemData.title}">`;
+
+                    statusText.innerText = "BACKUP TELEMETRY ONLINE • NASA IMAGE ARCHIVE";
+                    statusText.className = "loaded-status";
+                    statusText.style.color = "#ffb05c";
+                } catch (backupError) {
+                    console.error("All feeds failed:", primaryError, backupError);
+                    document.getElementById("title").innerText = "Failed to load NASA data.";
+                    document.getElementById("explanation").innerText = "Network or browser extension blocked NASA APIs (" + primaryError.message + ").";
+                    mediaContainer.innerHTML = "";
+
+                    statusText.innerText = "SYSTEM OFFLINE";
+                    statusText.className = "loaded-status";
+                    statusText.style.color = "#e74c3c";
+                }
             }
         }
 
