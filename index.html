@@ -90,16 +90,25 @@
             box-shadow: 0 0 15px rgba(244, 145, 30, 0.6); 
             border: 1px solid rgba(244, 145, 30, 0.3);
         }
+
         p {
             text-align: left;
             line-height: 1.6;
         }
+
+        /* Style links inside NASA's explanation text to match your theme */
+        p a {
+            color: #ffb05c;
+            text-decoration: underline;
+        }
+
         /* Pulse effect for the loading message */
         @keyframes pulse {
             0% { opacity: 0.3; }
             50% { opacity: 1; }
             100% { opacity: 0.3; }
         }
+
         /* Sleek white pulsing text during fetch */
         .animated-pulse {
             text-align: center; 
@@ -107,13 +116,15 @@
             animation: pulse 2s infinite ease-in-out;
             color: #ffffff; 
         }
+
         /* Custom status text using professional soft off-white */
         .loaded-status {
             text-align: center;
             font-weight: bold;
             letter-spacing: 1px;
-            color: #E0E0E0; 
+            color: #2ecc71; 
         }
+
         /* High-tech date picker wrapper and input elements */
         .control-group {
             margin: 15px auto;
@@ -135,6 +146,7 @@
             outline: none;
             cursor: pointer;
         }
+
         /* Style for your professional signature footer */
         .footer {
             text-align: center;
@@ -166,7 +178,7 @@
         <div id="media-container"></div>
         <p id="explanation">Loading explanation...</p>
         
-        <div class="footer">Created by [Zoe Canfield] | Space City Dashboard</div>
+        <div class="footer">Created by Zoe Canfield | Space City Dashboard</div>
     </div>
 
     <script>
@@ -177,75 +189,78 @@
 
         async function fetchNasaData(selectedDate = "") {
             const statusText = document.getElementById("loading-status");
+            const mediaContainer = document.getElementById("media-container");
+            
             statusText.innerText = "Fetching live data from NASA...";
             statusText.className = "animated-pulse";
             statusText.style.color = "#ffffff";
 
-            // Bypassing broken api.nasa.gov parameters and pulling from the direct production endpoint
-            let finalUrl = "https://science.nasa.gov/wp-json/wp/v2/apod-basic";
+            // Use NASA's new WordPress REST API endpoint
+            let finalUrl = "https://nasa.gov";
+            
+            // Convert YYYY-MM-DD to YYMMDD format required by the new endpoint
             if (selectedDate) {
-                finalUrl = finalUrl + "?date=" + String(selectedDate);
+                const parts = selectedDate.split("-"); // ["2026", "11", "10"]
+                const yymmdd = parts[0].slice(-2) + parts[1] + parts[2]; // "261110"
+                finalUrl = `${finalUrl}/${yymmdd}`;
             }
 
             try {
                 const response = await fetch(finalUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
                 let data = await response.json();
                 
-                // The new system returns arrays if fetched cleanly; normalize data to an object format
+                // The base endpoint returns an array of recent entries; grab the newest one
                 if (Array.isArray(data)) {
                     data = data[0];
                 }
 
-                // If nothing returns or is completely blank, manually force throw an error fallback
                 if (!data) {
-                    throw new Error("No data structural response from NASA framework.");
+                    throw new Error("No data returned from NASA.");
                 }
 
-                // Safely grab properties using deep safety checks to avoid "undefined" strings completely
+                // Extract title, explanation, and the direct hdurl image asset
                 const parsedTitle = data.title || "Astronomy Picture of the Day";
-                const parsedExplanation = data.explanation || "No text description provided by NASA for this date entry.";
-                
-                // Robust URL check for the absolute image asset link
-                let imageUrl = "";
-                if (data.featured_image && data.featured_image.url) {
-                    imageUrl = data.featured_image.url;
-                } else if (data.url) {
-                    imageUrl = data.url;
-                }
+                const parsedExplanation = data.explanation || "No description provided for this date.";
+                const imageUrl = data.hdurl || "";
+                const altText = data.alt || parsedTitle;
 
-                // Block the generic logo template from loading as an image asset
-                if (!imageUrl || imageUrl.includes("nasa-logo")) {
-                    imageUrl = "https://nasa.gov"; // High-quality galaxy placeholder fallback
-                }
-
-                // Update UI layout container
+                // Update UI text (using innerHTML so NASA's links and bold tags render properly)
                 document.getElementById("title").innerText = parsedTitle;
-                document.getElementById("explanation").innerText = parsedExplanation;
-                
-                const mediaContainer = document.getElementById("media-container");
-                mediaContainer.innerHTML = `<img src="${imageUrl}" alt="NASA APOD">`;
-                
-                statusText.innerText = "System Online";
+                document.getElementById("explanation").innerHTML = parsedExplanation;
+
+                // Render image or a link if the entry is a video
+                if (data.media_type === "video") {
+                    mediaContainer.innerHTML = `
+                        <p style="text-align: center; margin: 20px 0;">
+                            <a href="${data.url}" target="_blank" rel="noopener noreferrer" style="color: #F4911E; font-weight: bold;">
+                                ▶ Watch Today's APOD Video on NASA Science
+                            </a>
+                        </p>`;
+                } else if (imageUrl && !imageUrl.includes("nasa-logo")) {
+                    mediaContainer.innerHTML = `<img src="${imageUrl}" alt="${altText}">`;
+                } else {
+                    mediaContainer.innerHTML = `<p style="text-align: center; color: #ffb05c;">No image file available for this date.</p>`;
+                }
+
+                statusText.innerText = "TELEMETRY ONLINE • " + (data.date || todayStr);
                 statusText.className = "loaded-status";
-                
+                statusText.style.color = "#2ecc71";
+
             } catch (error) {
                 console.error("Error fetching data:", error);
                 document.getElementById("title").innerText = "Failed to load NASA data.";
-                document.getElementById("explanation").innerText = "The official NASA API servers are experiencing update instabilities. Try selecting a different historical mission date.";
-                
-                statusText.innerText = "System Offline";
+                document.getElementById("explanation").innerText = "Unable to retrieve the space image for this date. Try selecting a different mission date.";
+                mediaContainer.innerHTML = "";
+
+                statusText.innerText = "SYSTEM OFFLINE";
+                statusText.className = "loaded-status";
                 statusText.style.color = "#e74c3c";
-                statusText.style.animation = "none";
             }
         }
 
-        // Run automatically when the webpage fires up
+        // Load today's picture automatically when the dashboard opens
         fetchNasaData();
-
-        // Listen for user calendar updates and cleanly format the date changes
-        datePicker.addEventListener("change", (e) => {
-            fetchNasaData(e.target.value);
-        });
-    </script>
-</body>
-</html>
