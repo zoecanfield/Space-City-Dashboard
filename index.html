@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Space City Dashboard</title>
+    <!-- Prevents the harmless favicon.ico 404 message in Console -->
+    <link rel="icon" href="data:,">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,7 +35,6 @@
             z-index: -1;
         }
 
-        /* Tiny foreground stars */
         .stars {
             background-image: 
                 radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
@@ -47,7 +48,6 @@
             animation: twinkle 4s infinite ease-in-out;
         }
 
-        /* Medium background stars */
         .stars2 {
             background-image: 
                 radial-gradient(1.5px 1.5px at 30px 100px, #fff, rgba(0,0,0,0)),
@@ -74,7 +74,7 @@
             margin: 40px auto;
             padding: 30px; 
             border-radius: 10px;
-            border: 2px solid #F4911E; /* Astros Orange Border */
+            border: 2px solid #F4911E;
             box-shadow: 0px 4px 20px rgba(244, 145, 30, 0.4); 
             position: relative;
             z-index: 10;
@@ -96,20 +96,17 @@
             line-height: 1.6;
         }
 
-        /* Style links inside NASA's explanation text to match your theme */
         p a {
             color: #ffb05c;
             text-decoration: underline;
         }
 
-        /* Pulse effect for the loading message */
         @keyframes pulse {
             0% { opacity: 0.3; }
             50% { opacity: 1; }
             100% { opacity: 0.3; }
         }
 
-        /* Sleek white pulsing text during fetch */
         .animated-pulse {
             text-align: center; 
             font-style: italic;
@@ -117,7 +114,6 @@
             color: #ffffff; 
         }
 
-        /* Custom status text using professional soft off-white */
         .loaded-status {
             text-align: center;
             font-weight: bold;
@@ -125,7 +121,6 @@
             color: #2ecc71; 
         }
 
-        /* High-tech date picker wrapper and input elements */
         .control-group {
             margin: 15px auto;
             text-align: center;
@@ -136,7 +131,7 @@
             margin-right: 8px;
             font-weight: bold;
         }
-        .control-group input[type="date"] {
+        .control-group input {
             background: #222222;
             border: 1px solid #F4911E;
             color: white;
@@ -147,7 +142,6 @@
             cursor: pointer;
         }
 
-        /* Style for your professional signature footer */
         .footer {
             text-align: center;
             font-size: 0.9rem;
@@ -160,7 +154,6 @@
 </head>
 <body>
 
-    <!-- Invisible background star elements -->
     <div class="stars"></div>
     <div class="stars2"></div>
 
@@ -168,7 +161,6 @@
         <h1 class="glow-text">Space City Dashboard</h1>
         <p id="loading-status" class="animated-pulse">Fetching live data from NASA...</p>
         
-        <!-- Interactive Date Picker Controls -->
         <div class="control-group">
             <label for="space-date">MISSION DATE:</label>
             <input type="date" id="space-date" min="1995-06-16">
@@ -182,9 +174,8 @@
     </div>
 
     <script>
-        // Set up the date picker properties safely
         const datePicker = document.getElementById("space-date");
-        const todayStr = new Date().toISOString().split("T")[0];
+        const todayStr = new Date().toISOString().split("T").at(0);
         datePicker.max = todayStr;
 
         async function fetchNasaData(selectedDate = "") {
@@ -195,44 +186,41 @@
             statusText.className = "animated-pulse";
             statusText.style.color = "#ffffff";
 
-            // Use NASA's new WordPress REST API endpoint
-            let finalUrl = "https://nasa.gov";
+            let nasaEndpoint = "https://nasa.gov";
             
-            // Convert YYYY-MM-DD to YYMMDD format required by the new endpoint
             if (selectedDate) {
-                const parts = selectedDate.split("-"); // ["2026", "11", "10"]
-                const yymmdd = parts[0].slice(-2) + parts[1] + parts[2]; // "261110"
-                finalUrl = `${finalUrl}/${yymmdd}`;
+                const parts = selectedDate.split("-");
+                const yymmdd = parts.at(0).slice(-2) + parts.at(1) + parts.at(2);
+                nasaEndpoint = `${nasaEndpoint}/${yymmdd}`;
             }
 
+            // Use AllOrigins CORS proxy so GitHub Pages can read NASA's WordPress API cleanly
+            const proxyUrl = `https://allorigins.win{encodeURIComponent(nasaEndpoint)}`;
+
             try {
-                const response = await fetch(finalUrl);
+                const response = await fetch(proxyUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status}`);
                 }
 
                 let data = await response.json();
                 
-                // The base endpoint returns an array of recent entries; grab the newest one
                 if (Array.isArray(data)) {
-                    data = data[0];
+                    data = data.at(0);
                 }
 
                 if (!data) {
                     throw new Error("No data returned from NASA.");
                 }
 
-                // Extract title, explanation, and the direct hdurl image asset
                 const parsedTitle = data.title || "Astronomy Picture of the Day";
                 const parsedExplanation = data.explanation || "No description provided for this date.";
                 const imageUrl = data.hdurl || "";
                 const altText = data.alt || parsedTitle;
 
-                // Update UI text (using innerHTML so NASA's links and bold tags render properly)
                 document.getElementById("title").innerText = parsedTitle;
                 document.getElementById("explanation").innerHTML = parsedExplanation;
 
-                // Render image or a link if the entry is a video
                 if (data.media_type === "video") {
                     mediaContainer.innerHTML = `
                         <p style="text-align: center; margin: 20px 0;">
@@ -253,7 +241,7 @@
             } catch (error) {
                 console.error("Error fetching data:", error);
                 document.getElementById("title").innerText = "Failed to load NASA data.";
-                document.getElementById("explanation").innerText = "Unable to retrieve the space image for this date. Try selecting a different mission date.";
+                document.getElementById("explanation").innerText = "Error details: " + error.message;
                 mediaContainer.innerHTML = "";
 
                 statusText.innerText = "SYSTEM OFFLINE";
@@ -262,5 +250,11 @@
             }
         }
 
-        // Load today's picture automatically when the dashboard opens
         fetchNasaData();
+
+        datePicker.addEventListener("change", (event) => {
+            fetchNasaData(event.target.value);
+        });
+    </script>
+</body>
+</html>
