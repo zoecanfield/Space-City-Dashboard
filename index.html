@@ -178,10 +178,11 @@
         datePicker.max = todayStr;
 
         async function fetchWithFallbacks(nasaEndpoint) {
+            const encoded = encodeURIComponent(nasaEndpoint);
             const candidates = [
                 nasaEndpoint,
-                `https://corsproxy.io{encodeURIComponent(nasaEndpoint)}`,
-                `https://codetabs.com{encodeURIComponent(nasaEndpoint)}`
+                "https://corsproxy.io" + encoded,
+                "https://codetabs.com" + encoded
             ];
 
             let lastError = null;
@@ -189,7 +190,7 @@
                 try {
                     const response = await fetch(url);
                     if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
+                        throw new Error("HTTP " + response.status);
                     }
                     return await response.json();
                 } catch (err) {
@@ -207,12 +208,15 @@
             statusText.className = "animated-pulse";
             statusText.style.color = "#ffffff";
 
-            let nasaEndpoint = "https://nasa.gov";
+            // Full WordPress REST endpoint path built safely with string concatenation
+            const baseDomain = "https://science.nasa.gov";
+            const apiPath = "/wp-json/wp/v2/apod-basic";
+            let nasaEndpoint = baseDomain + apiPath;
             
             if (selectedDate) {
                 const parts = selectedDate.split("-");
                 const yymmdd = parts.at(0).slice(-2) + parts.at(1) + parts.at(2);
-                nasaEndpoint = `${nasaEndpoint}/${yymmdd}`;
+                nasaEndpoint = nasaEndpoint + "/" + yymmdd;
             }
 
             try {
@@ -235,16 +239,11 @@
                 document.getElementById("explanation").innerHTML = parsedExplanation;
 
                 if (data.media_type === "video") {
-                    mediaContainer.innerHTML = `
-                        <p style="text-align: center; margin: 20px 0;">
-                            <a href="${data.url}" target="_blank" rel="noopener noreferrer" style="color: #F4911E; font-weight: bold;">
-                                ▶ Watch Today's APOD Video on NASA Science
-                            </a>
-                        </p>`;
+                    mediaContainer.innerHTML = '<p style="text-align: center; margin: 20px 0;"><a href="' + data.url + '" target="_blank" rel="noopener noreferrer" style="color: #F4911E; font-weight: bold;">▶ Watch Today\'s APOD Video on NASA Science</a></p>';
                 } else if (imageUrl && !imageUrl.includes("nasa-logo")) {
-                    mediaContainer.innerHTML = `<img src="${imageUrl}" alt="${altText}">`;
+                    mediaContainer.innerHTML = '<img src="' + imageUrl + '" alt="' + altText + '">';
                 } else {
-                    mediaContainer.innerHTML = `<p style="text-align: center; color: #ffb05c;">No image file available for this date.</p>`;
+                    mediaContainer.innerHTML = '<p style="text-align: center; color: #ffb05c;">No image file available for this date.</p>';
                 }
 
                 statusText.innerText = "TELEMETRY ONLINE • " + (data.date || todayStr);
@@ -252,9 +251,10 @@
                 statusText.style.color = "#2ecc71";
 
             } catch (primaryError) {
-                // Backup: Pull directly from NASA's CORS-enabled Image Library API if APOD is blocked
+                // Backup: Full NASA Image Library search endpoint
                 try {
-                    const backupRes = await fetch("https://nasa.gov");
+                    const backupUrl = "https://images-api.nasa.gov" + "/search?q=nebula&media_type=image";
+                    const backupRes = await fetch(backupUrl);
                     const backupJson = await backupRes.json();
                     const items = backupJson.collection.items;
                     const randomItem = items.at(Math.floor(Math.random() * 10));
@@ -263,7 +263,7 @@
 
                     document.getElementById("title").innerText = itemData.title || "NASA Space Archive";
                     document.getElementById("explanation").innerText = itemData.description || "Loaded via NASA Image Library backup feed.";
-                    mediaContainer.innerHTML = `<img src="${itemImg}" alt="${itemData.title}">`;
+                    mediaContainer.innerHTML = '<img src="' + itemImg + '" alt="' + itemData.title + '">';
 
                     statusText.innerText = "BACKUP TELEMETRY ONLINE • NASA IMAGE ARCHIVE";
                     statusText.className = "loaded-status";
@@ -271,7 +271,7 @@
                 } catch (backupError) {
                     console.error("All feeds failed:", primaryError, backupError);
                     document.getElementById("title").innerText = "Failed to load NASA data.";
-                    document.getElementById("explanation").innerText = "Network or browser extension blocked NASA APIs (" + primaryError.message + ").";
+                    document.getElementById("explanation").innerText = "Error details: " + primaryError.message;
                     mediaContainer.innerHTML = "";
 
                     statusText.innerText = "SYSTEM OFFLINE";
